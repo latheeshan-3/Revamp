@@ -67,7 +67,7 @@ export default function EmployeeDashboard() {
             className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition">
             {isPlaying ? "⏸ Pause Music" : "click ME"}
           </button>
-          <audio id="bg-audio" src="/music/theme2.mp3" loop  />
+          <audio id="bg-audio" src="/music/theme5.mp3" loop  />
         </div>
                           {/* for  Music  */}
 

@@ -25,10 +25,25 @@ import com.revamp.auth.auth.service.AuthService;
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "*") // Gateway usually handles CORS, keep for testing
 public class AuthController {
+    public static class ChangePasswordRequest {
+        public String email;
+        public String currentPassword;
+        public String newPassword;
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest req) {
+        try {
+            authService.changePassword(req.email, req.currentPassword, req.newPassword);
+            return ResponseEntity.ok(Collections.singletonMap("message", "Password changed successfully"));
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(400).body(Collections.singletonMap("message", ex.getMessage()));
+        }
+    }
 
     @Autowired
     private AuthService authService;
-    
+
     @Autowired
     private UserRepository userRepository;
 
@@ -48,44 +63,56 @@ public class AuthController {
     public static class AuthResponse {
         public String token;
         public Object user;
+
         public AuthResponse(String token, Object user) {
             this.token = token;
             this.user = user;
         }
     }
 
-   @PostMapping("/register")
-public ResponseEntity<?> register(@RequestBody RegisterRequest req) {
-    try {
-        User created = authService.register(req.username, req.email, req.password, req.role);
-        created.setPasswordHash(null);
-
-        return ResponseEntity
-            .status(201) // Created
-            .body(Collections.singletonMap("message", "User registered successfully"));
-    } catch (RuntimeException ex) {
-        return ResponseEntity.badRequest()
-                .body(Collections.singletonMap("message", ex.getMessage()));
+    public static class UpdateUserRequest {
+        public String email;
+        public String username;
     }
-}
 
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody RegisterRequest req) {
+        try {
+            User created = authService.register(req.username, req.email, req.password, req.role);
+            created.setPasswordHash(null);
+
+            return ResponseEntity
+                    .status(201) // Created
+                    .body(Collections.singletonMap("message", "User registered successfully"));
+        } catch (RuntimeException ex) {
+            return ResponseEntity.badRequest()
+                    .body(Collections.singletonMap("message", ex.getMessage()));
+        }
+    }
 
     @PostMapping("/login")
-public ResponseEntity<?> login(@RequestBody LoginRequest req) {
-    try {
-        User user = authService.getUserByEmail(req.email);
-        String token = authService.login(req.email, req.password);
+    public ResponseEntity<?> login(@RequestBody LoginRequest req) {
+        try {
+            // 🔹 Fetch the user by email
+            User user = authService.getUserByEmail(req.email);
 
-        user.setPasswordHash(null); // don't leak hash
-        return ResponseEntity.ok(new AuthResponse(
-                token,
-                Collections.singletonMap("role", user.getRole())
-        ));
-    } catch (RuntimeException ex) {
-        return ResponseEntity.status(401)
-                .body(Collections.singletonMap("message", ex.getMessage()));
+            // 🔹 Authenticate and generate JWT token
+            String token = authService.login(req.email, req.password);
+
+            // 🔹 Prevent password hash from being returned in response
+            user.setPasswordHash(null);
+
+            // 🔹 Return success with token and user role
+            return ResponseEntity.ok(new AuthResponse(
+                    token,
+                    Collections.singletonMap("role", user.getRole())));
+
+        } catch (RuntimeException ex) {
+            // 🔹 Handle invalid credentials or authentication failures
+            return ResponseEntity.status(401)
+                    .body(Collections.singletonMap("message", ex.getMessage()));
+        }
     }
-}
 
     // Admin endpoint to register employees
     @PostMapping("/register-employee")
@@ -97,8 +124,8 @@ public ResponseEntity<?> login(@RequestBody LoginRequest req) {
 
             // Return user data so frontend can use the ID for employee details
             return ResponseEntity
-                .status(201)
-                .body(created);
+                    .status(201)
+                    .body(created);
         } catch (RuntimeException ex) {
             return ResponseEntity.badRequest()
                     .body(Collections.singletonMap("message", ex.getMessage()));
@@ -110,11 +137,11 @@ public ResponseEntity<?> login(@RequestBody LoginRequest req) {
     public ResponseEntity<?> getAllEmployees() {
         try {
             List<User> employees = userRepository.findAll()
-                .stream()
-                .filter(user -> "EMPLOYEE".equals(user.getRole()))
-                .peek(user -> user.setPasswordHash(null)) // Remove password hashes
-                .collect(Collectors.toList());
-            
+                    .stream()
+                    .filter(user -> "EMPLOYEE".equals(user.getRole()))
+                    .peek(user -> user.setPasswordHash(null)) // Remove password hashes
+                    .collect(Collectors.toList());
+
             return ResponseEntity.ok(employees);
         } catch (Exception ex) {
             return ResponseEntity.status(500)
@@ -128,17 +155,19 @@ public ResponseEntity<?> login(@RequestBody LoginRequest req) {
         try {
             // Check if user exists
             User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
-            
+                    .orElseThrow(() -> new RuntimeException("Employee not found"));
+
             // Only allow deletion of employees
             if (!"EMPLOYEE".equals(user.getRole())) {
                 return ResponseEntity.badRequest()
-                    .body(Collections.singletonMap("message", "Only employees can be deleted through this endpoint"));
+                        .body(Collections.singletonMap("message",
+                                "Only employees can be deleted through this endpoint"));
             }
-            
-            // Delete user (employee details should be deleted separately via employeeservice)
+
+            // Delete user (employee details should be deleted separately via
+            // employeeservice)
             userRepository.deleteById(userId);
-            
+
             return ResponseEntity.ok(Collections.singletonMap("message", "Employee deleted successfully"));
         } catch (Exception ex) {
             return ResponseEntity.status(404)
@@ -151,14 +180,15 @@ public ResponseEntity<?> login(@RequestBody LoginRequest req) {
     public ResponseEntity<?> updateEmployee(@PathVariable String userId, @RequestBody RegisterRequest req) {
         try {
             User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
-            
+                    .orElseThrow(() -> new RuntimeException("Employee not found"));
+
             // Only allow updating employees
             if (!"EMPLOYEE".equals(user.getRole())) {
                 return ResponseEntity.badRequest()
-                    .body(Collections.singletonMap("message", "Only employees can be updated through this endpoint"));
+                        .body(Collections.singletonMap("message",
+                                "Only employees can be updated through this endpoint"));
             }
-            
+
             // Update user fields
             if (req.username != null && !req.username.isEmpty()) {
                 user.setUsername(req.username);
@@ -166,14 +196,25 @@ public ResponseEntity<?> login(@RequestBody LoginRequest req) {
             if (req.email != null && !req.email.isEmpty()) {
                 user.setEmail(req.email);
             }
-            
+
             User updated = userRepository.save(user);
             updated.setPasswordHash(null);
-            
+
             return ResponseEntity.ok(updated);
         } catch (Exception ex) {
             return ResponseEntity.status(404)
                     .body(Collections.singletonMap("message", ex.getMessage()));
+        }
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<?> updateMe(@RequestBody UpdateUserRequest req) {
+        try {
+            User updated = authService.updateUsernameByEmail(req.email, req.username);
+            updated.setPasswordHash(null);
+            return ResponseEntity.ok(Collections.singletonMap("message", "User updated"));
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(400).body(Collections.singletonMap("message", ex.getMessage()));
         }
     }
 

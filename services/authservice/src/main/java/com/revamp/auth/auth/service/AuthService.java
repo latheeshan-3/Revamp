@@ -13,6 +13,15 @@ import com.revamp.auth.auth.util.JwtUtil;
 
 @Service
 public class AuthService {
+    public void changePassword(String email, String currentPassword, String newPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
@@ -29,7 +38,7 @@ public class AuthService {
         if (userRepository.existsByEmail(email)) {
             throw new RuntimeException("Email already in use");
         }
-        
+
         String hashed = passwordEncoder.encode(rawPassword);
         User user = new User(username, email, hashed, role != null ? role : "CONSUMER");
         return userRepository.save(user);
@@ -37,7 +46,8 @@ public class AuthService {
 
     public String login(String email, String rawPassword) {
         Optional<User> opt = userRepository.findByEmail(email);
-        if (!opt.isPresent()) throw new RuntimeException("Invalid credentials");
+        if (!opt.isPresent())
+            throw new RuntimeException("Invalid credentials");
         User user = opt.get();
         if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
             throw new RuntimeException("Invalid credentials");
@@ -47,8 +57,15 @@ public class AuthService {
     }
 
     public User getUserByEmail(String email) {
-    return userRepository.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("User not found"));
-}
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    public User updateUsernameByEmail(String email, String newUsername) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setUsername(newUsername);
+        return userRepository.save(user);
+    }
 
 }

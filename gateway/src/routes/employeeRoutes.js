@@ -1,17 +1,32 @@
 const express = require("express");
 
 const router = express.Router();
-const EMPLOYEE_SERVICE = process.env.EMPLOYEE_SERVICE || "http://localhost:8082";
+
+const EMPLOYEE_SERVICE = process.env.EMPLOYEE_SERVICE || "http://localhost:8083";
 
 // Node.js 18+ has built-in fetch, otherwise use node-fetch
 const fetch = globalThis.fetch || require("node-fetch");
+
+// Helper function to build headers with Authorization forwarding
+function buildHeaders(req) {
+  const headers = {
+    "Content-Type": "application/json",
+  };
+  
+  // Forward Authorization header if present
+  if (req.headers["authorization"]) {
+    headers["Authorization"] = req.headers["authorization"];
+  }
+  
+  return headers;
+}
 
 // Add employee details
 router.post("/employee-details", async (req, res) => {
   try {
     const backendRes = await fetch(`${EMPLOYEE_SERVICE}/api/employee/employee-details`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: buildHeaders(req),
       body: JSON.stringify(req.body),
     });
 
@@ -26,15 +41,32 @@ router.post("/employee-details", async (req, res) => {
 // Get all employee details
 router.get("/employee-details", async (req, res) => {
   try {
-    const backendRes = await fetch(`${EMPLOYEE_SERVICE}/api/employee/employee-details`, {
+    const url = `${EMPLOYEE_SERVICE}/api/employee/employee-details`;
+    console.log(`[Gateway] Fetching employee details from: ${url}`);
+    console.log(`[Gateway] Employee service URL: ${EMPLOYEE_SERVICE}`);
+    
+    const backendRes = await fetch(url, {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
+      headers: buildHeaders(req),
     });
 
+    console.log(`[Gateway] Employee details response status: ${backendRes.status}`);
+    
+    if (!backendRes.ok) {
+      const errorText = await backendRes.text();
+      console.error(`[Gateway] Employee service error response: ${errorText}`);
+      return res.status(backendRes.status).json({ 
+        message: "Error fetching employee details", 
+        error: errorText 
+      });
+    }
+
     const data = await backendRes.json();
+    console.log(`[Gateway] Employee details fetched successfully. Count: ${Array.isArray(data) ? data.length : 'N/A'}`);
     res.status(backendRes.status).json(data);
   } catch (err) {
-    console.error("Get employee details error:", err);
+    console.error("[Gateway] Get employee details error:", err);
+    console.error("[Gateway] Error stack:", err.stack);
     res.status(500).json({ message: "Gateway error", error: err.message });
   }
 });
@@ -44,7 +76,7 @@ router.get("/employee-details/:userId", async (req, res) => {
   try {
     const backendRes = await fetch(`${EMPLOYEE_SERVICE}/api/employee/employee-details/${req.params.userId}`, {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
+      headers: buildHeaders(req),
     });
 
     const data = await backendRes.json();
@@ -60,7 +92,7 @@ router.delete("/employee-details/:userId", async (req, res) => {
   try {
     const backendRes = await fetch(`${EMPLOYEE_SERVICE}/api/employee/employee-details/${req.params.userId}`, {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
+      headers: buildHeaders(req),
     });
 
     const data = await backendRes.json();
@@ -76,7 +108,7 @@ router.put("/employee-details/:userId", async (req, res) => {
   try {
     const backendRes = await fetch(`${EMPLOYEE_SERVICE}/api/employee/employee-details/${req.params.userId}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: buildHeaders(req),
       body: JSON.stringify(req.body),
     });
 
@@ -93,7 +125,7 @@ router.get("/profile/:employeeId", async (req, res) => {
   try {
     const backendRes = await fetch(`${EMPLOYEE_SERVICE}/api/employees/profile/${req.params.employeeId}`, {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
+      headers: buildHeaders(req),
     });
 
     const data = await backendRes.json();
@@ -109,7 +141,7 @@ router.put("/profile/:employeeId", async (req, res) => {
   try {
     const backendRes = await fetch(`${EMPLOYEE_SERVICE}/api/employees/profile/${req.params.employeeId}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: buildHeaders(req),
       body: JSON.stringify(req.body),
     });
 
@@ -126,7 +158,7 @@ router.put("/availability/:employeeId", async (req, res) => {
   try {
     const backendRes = await fetch(`${EMPLOYEE_SERVICE}/api/employees/availability/${req.params.employeeId}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: buildHeaders(req),
       body: JSON.stringify(req.body),
     });
 
@@ -143,7 +175,7 @@ router.get("/history/:employeeId", async (req, res) => {
   try {
     const backendRes = await fetch(`${EMPLOYEE_SERVICE}/api/employees/history/${req.params.employeeId}`, {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
+      headers: buildHeaders(req),
     });
 
     const data = await backendRes.json();

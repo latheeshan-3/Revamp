@@ -7,11 +7,15 @@ const bodyParser = require("body-parser");
 const authRoutes = require("./routes/authRoutes");
 const customerRoutes = require("./routes/customerRoutes");
 const employeeRoutes = require("./routes/employeeRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 const taskRoutes = require("./routes/taskRoutes");
 const timeTrackingRoutes = require("./routes/timeTrackingRoutes");
+const bookingRoutes = require("./routes/bookingRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 
 const app = express();
+app.use(cors());
+app.use(bodyParser.json());
 
 /* ===== CORS (must be before routes) ===== */
 const allowedOrigins = ["http://localhost:3000"];
@@ -40,6 +44,8 @@ app.use("/api/employees", employeeRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/time-tracking", timeTrackingRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api", bookingRoutes);
+app.use("/api", adminRoutes);
 
 /* ===== Start server ===== */
 const PORT = process.env.PORT || 4000;

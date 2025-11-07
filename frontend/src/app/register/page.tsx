@@ -23,11 +23,12 @@ export default function Register() {
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
-  const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL as string;
-
+  const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || "http://localhost:4000";
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    // Clear error when user starts typing
+    if (error) setError("");
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -39,23 +40,46 @@ export default function Register() {
       return;
     }
 
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch(`${GATEWAY_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          role: "CONSUMER", // Default role for registration
+        }),
       });
 
-      const text = await res.text();
-      console.log("RAW RESPONSE:", text);
-      const body: ApiResponse = text ? JSON.parse(text) : {};
+      // Check content type before parsing
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await res.text();
+        console.error("Non-JSON response:", text);
+        throw new Error("Server returned an invalid response. Please try again.");
+      }
 
-      if (!res.ok) throw new Error(body.message || "Registration failed");
+      const body: ApiResponse = await res.json();
 
+      if (!res.ok) {
+        throw new Error(body.message || "Registration failed");
+      }
+
+      // Success - redirect to login
       router.push("/login");
     } catch (err: any) {
-      setError(err.message);
+      if (err instanceof SyntaxError) {
+        setError("Invalid response from server. Please try again.");
+      } else {
+        setError(err.message || "An error occurred during registration. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -67,7 +91,7 @@ export default function Register() {
         <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
           Create Your Account
         </h2>
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5" noValidate>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Username
@@ -78,7 +102,9 @@ export default function Register() {
               value={form.username}
               onChange={handleChange}
               required
+              autoComplete="username"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter your username"
             />
           </div>
           <div>
@@ -91,7 +117,9 @@ export default function Register() {
               value={form.email}
               onChange={handleChange}
               required
+              autoComplete="email"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter your email"
             />
           </div>
           <div>
@@ -104,7 +132,9 @@ export default function Register() {
               value={form.password}
               onChange={handleChange}
               required
+              autoComplete="new-password"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter your password"
             />
           </div>
           <button

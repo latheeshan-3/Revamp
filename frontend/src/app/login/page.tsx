@@ -20,19 +20,33 @@ export default function Login() {
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
-  //const GATEWAY_URL = "http://localhost:4000"; 
-  const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL as string;
-
-  
+  const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || "http://localhost:4000";
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    // Clear error when user starts typing
+    if (error) setError("");
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     setLoading(true);
+
+    // Basic validation
+    if (!form.email || !form.password) {
+      setError("Please fill in all fields");
+      setLoading(false);
+      return;
+    }
+
+    // Email validation (more lenient than browser default)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      setError("Please enter a valid email address");
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch(`${GATEWAY_URL}/api/auth/login`, {
@@ -42,19 +56,29 @@ export default function Login() {
       });
 
       const body: ApiResponse = await res.json();
-      if (!res.ok) throw new Error(body.message || "Login failed");
+      if (!res.ok) {
+        throw new Error(body.message || "Login failed");
+      }
 
-      if (body.token) localStorage.setItem("token", body.token);
-      if (body.user) localStorage.setItem("user", JSON.stringify(body.user));
+      if (body.token) {
+        localStorage.setItem("token", body.token);
+      }
+      if (body.user) {
+        localStorage.setItem("user", JSON.stringify(body.user));
+      }
 
       // Redirect based on role
       const role = body.user?.role;
-      if (role === "ADMIN") router.push("/admin-dashboard");
-      else if (role === "EMPLOYEE") router.push("/employee-dashboard");
-      else router.push("/consumer-dashboard");
+      if (role === "ADMIN") {
+        router.push("/admin-dashboard");
+      } else if (role === "EMPLOYEE") {
+        router.push("/employee-dashboard");
+      } else {
+        router.push("/consumer-dashboard");
+      }
 
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "An error occurred during login. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -66,7 +90,7 @@ export default function Login() {
         <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
           Login to Revamp
         </h2>
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5" noValidate>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Email
@@ -77,7 +101,11 @@ export default function Login() {
               value={form.email}
               onChange={handleChange}
               required
+              autoComplete="email"
+              pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
+              title="Please enter a valid email address"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter your email"
             />
           </div>
           <div>
@@ -90,7 +118,9 @@ export default function Login() {
               value={form.password}
               onChange={handleChange}
               required
+              autoComplete="current-password"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter your password"
             />
           </div>
           <button

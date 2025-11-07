@@ -15,6 +15,17 @@ router.post("/register", async (req, res) => {
       body: JSON.stringify(req.body),
     });
 
+    // Check if response is JSON
+    const contentType = backendRes.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await backendRes.text();
+      console.error("Non-JSON response from auth service:", text);
+      return res.status(500).json({ 
+        message: "Invalid response from auth service",
+        error: "Server returned non-JSON response"
+      });
+    }
+
     const data = await backendRes.json();
     res.status(backendRes.status).json(data);
   } catch (err) {

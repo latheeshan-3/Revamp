@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y maven && rm -rf /var/lib/apt/lists/*
 RUN mvn clean package -DskipTests
 
 # Expose port
-EXPOSE 8082
+EXPOSE 8083
 
 # Run the application
 CMD ["java", "-jar", "target/employee-service-0.0.1-SNAPSHOT.jar"]

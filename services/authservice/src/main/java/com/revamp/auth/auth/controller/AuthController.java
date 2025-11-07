@@ -4,8 +4,6 @@ package com.revamp.auth.auth.controller;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -13,18 +11,13 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.revamp.auth.auth.model.User;
-import com.revamp.auth.auth.repository.UserRepository;
 import com.revamp.auth.auth.repository.UserRepository;
 import com.revamp.auth.auth.service.AuthService;
 
@@ -106,16 +99,16 @@ public class AuthController {
             // 🔹 Authenticate and generate JWT token
             String token = authService.login(req.email, req.password);
 
-        user.setPasswordHash(null); // don't leak hash
-        return ResponseEntity.ok(new AuthResponse(
-                token,
-                Collections.singletonMap("role", user.getRole())
-        ));
-    } catch (RuntimeException ex) {
-        return ResponseEntity.status(401)
-                .body(Collections.singletonMap("message", ex.getMessage()));
+            user.setPasswordHash(null); // don't leak hash
+            return ResponseEntity.ok(new AuthResponse(
+                    token,
+                    user
+            ));
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(401)
+                    .body(Collections.singletonMap("message", ex.getMessage()));
+        }
     }
-}
 
     // Admin endpoint to register employees
     @PostMapping("/register-employee")

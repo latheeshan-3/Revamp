@@ -51,6 +51,26 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// ============================
+// GOOGLE LOGIN
+// ============================
+router.post("/google", async (req, res) => {
+  try {
+    const backendRes = await fetch(`${AUTH_SERVICE}/api/auth/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req.body), // includes { token: idToken }
+    });
+
+    const data = await backendRes.json();
+    res.status(backendRes.status).json(data);
+  } catch (err) {
+    console.error("Google login error:", err);
+    res.status(500).json({ message: "Gateway error", error: err.message });
+  }
+});
+
+
 // Admin endpoint to register employees
 router.post("/register-employee", async (req, res) => {
   try {

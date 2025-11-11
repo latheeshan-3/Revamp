@@ -49,26 +49,49 @@ public class ModificationServiceController {
 			Double estimatedCost = null;
 			Integer estimatedHours = null;
 			
+			// Validate estimated hours is required
+			if (!request.containsKey("estimatedHours") || request.get("estimatedHours") == null || request.get("estimatedHours").toString().trim().isEmpty()) {
+				Map<String, String> error = new HashMap<>();
+				error.put("error", "Estimated hours is required");
+				error.put("message", "Estimated hours is required and must be a positive integer");
+				System.err.println("✗ Error: Estimated hours is required");
+				return ResponseEntity.badRequest().body(error);
+			}
+			
+			// Parse and validate estimated hours
+			try {
+				estimatedHours = Integer.parseInt(request.get("estimatedHours").toString());
+				if (estimatedHours <= 0) {
+					Map<String, String> error = new HashMap<>();
+					error.put("error", "Invalid estimated hours");
+					error.put("message", "Estimated hours must be a positive integer");
+					System.err.println("✗ Error: Estimated hours must be positive - got: " + estimatedHours);
+					return ResponseEntity.badRequest().body(error);
+				}
+			} catch (NumberFormatException e) {
+				Map<String, String> error = new HashMap<>();
+				error.put("error", "Invalid estimated hours");
+				error.put("message", "Estimated hours must be a valid integer");
+				System.err.println("✗ Error: Invalid estimated hours - " + e.getMessage());
+				return ResponseEntity.badRequest().body(error);
+			}
+			
+			// Parse estimated cost if provided (optional)
 			if (request.containsKey("estimatedCost") && request.get("estimatedCost") != null && !request.get("estimatedCost").toString().trim().isEmpty()) {
 				try {
 					estimatedCost = Double.parseDouble(request.get("estimatedCost").toString());
+					if (estimatedCost < 0) {
+						Map<String, String> error = new HashMap<>();
+						error.put("error", "Invalid estimated cost");
+						error.put("message", "Estimated cost cannot be negative");
+						System.err.println("✗ Error: Estimated cost cannot be negative");
+						return ResponseEntity.badRequest().body(error);
+					}
 				} catch (NumberFormatException e) {
 					Map<String, String> error = new HashMap<>();
 					error.put("error", "Invalid estimated cost");
 					error.put("message", "Estimated cost must be a valid number");
 					System.err.println("✗ Error: Invalid estimated cost - " + e.getMessage());
-					return ResponseEntity.badRequest().body(error);
-				}
-			}
-			
-			if (request.containsKey("estimatedHours") && request.get("estimatedHours") != null && !request.get("estimatedHours").toString().trim().isEmpty()) {
-				try {
-					estimatedHours = Integer.parseInt(request.get("estimatedHours").toString());
-				} catch (NumberFormatException e) {
-					Map<String, String> error = new HashMap<>();
-					error.put("error", "Invalid estimated hours");
-					error.put("message", "Estimated hours must be a valid integer");
-					System.err.println("✗ Error: Invalid estimated hours - " + e.getMessage());
 					return ResponseEntity.badRequest().body(error);
 				}
 			}

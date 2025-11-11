@@ -3,6 +3,7 @@ package com.revamp.booking.service;
 import com.revamp.booking.dto.AppointmentRequest;
 import com.revamp.booking.model.Booking;
 import com.revamp.booking.repository.BookingRepository;
+import com.revamp.booking.bookingservice.service.TimeSlotService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,12 +14,13 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class BookingService {
     private final BookingRepository bookingRepository;
-    private final TimeslotClient timeslotClient;
+    private final TimeSlotService timeSlotService;
 
-    public Booking createAppointment(String customerId, String customerName, AppointmentRequest req) {
+    public Booking createAppointment(String customerId, String customerName, String customerEmail, AppointmentRequest req) {
         Booking booking = new Booking();
         booking.setCustomerId(customerId);
         booking.setCustomerName(customerName);
+        booking.setCustomerEmail(customerEmail);
         booking.setServiceType(req.getServiceType());
         booking.setDate(LocalDate.parse(req.getDate()));
         booking.setInstructions(req.getInstructions());
@@ -42,18 +44,33 @@ public class BookingService {
             if (req.getTimeSlotId() == null || req.getTimeSlotId().isBlank()) {
                 throw new IllegalArgumentException("timeSlotId is required for service bookings");
             }
-            boolean booked = timeslotClient.bookSlot(req.getTimeSlotId());
-            if (!booked) {
-                throw new IllegalStateException("Time slot is already booked");
-            }
             booking.setTimeSlotId(req.getTimeSlotId());
-            // Optionally fetch slot for start/end times via availability list (not mandatory for MVP)
+            
+            // Fetch time slot details to populate start/end times
+            timeSlotService.getSlotById(req.getTimeSlotId()).ifPresent(slot -> {
+                booking.setTimeSlotStart(slot.getStartTime().toString());
+                booking.setTimeSlotEnd(slot.getEndTime().toString());
+            });
         } else {
             booking.setNeededModifications(req.getNeededModifications());
             booking.setEstimatedTimeHours(req.getEstimatedTimeHours());
             booking.setEstimatedCost(req.getEstimatedCost());
         }
 
-        return bookingRepository.save(booking);
+        // Save booking first to get ID
+        Booking saved = bookingRepository.save(booking);
+
+        // Book the time slot after saving (for Service bookings)
+        if ("Service".equalsIgnoreCase(req.getServiceType())) {
+            try {
+                timeSlotService.bookSlot(req.getTimeSlotId(), saved.getId());
+            } catch (RuntimeException e) {
+                // If slot booking fails, delete the booking and throw error
+                bookingRepository.delete(saved);
+                throw new IllegalStateException("Time slot is already booked: " + e.getMessage());
+            }
+        }
+
+        return saved;
     }
 }

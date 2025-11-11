@@ -16,6 +16,7 @@ public class Booking {
 
     private String customerId;
     private String customerName;
+    private String customerEmail;
 
     private String vehicleId; // optional if new vehicle
     private VehicleDetails vehicleDetails; // if provided

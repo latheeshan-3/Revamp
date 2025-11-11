@@ -46,7 +46,6 @@ app.use(bodyParser.json());
 /* ===== Mount routes ===== */
 app.use("/api/auth", authRoutes);
 app.use("/api/customer", customerRoutes);
-app.use("/api/auth", employeeRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/time-tracking", timeTrackingRoutes);

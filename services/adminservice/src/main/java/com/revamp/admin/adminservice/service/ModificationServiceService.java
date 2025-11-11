@@ -28,6 +28,11 @@ public class ModificationServiceService {
 		System.out.println("Estimated Cost: " + estimatedCost);
 		System.out.println("Estimated Hours: " + estimatedHours);
 		
+		// Validate estimated hours is required
+		if (estimatedHours == null || estimatedHours <= 0) {
+			throw new IllegalArgumentException("Estimated hours is required and must be a positive integer");
+		}
+		
 		// Check if already exists by name
 		Query query = new Query(Criteria.where("name").is(name));
 		ModificationService existing = mongoTemplate.findOne(query, ModificationService.class);
@@ -36,11 +41,9 @@ public class ModificationServiceService {
 			System.out.println("⚠ Service with name '" + name + "' already exists. Updating existing record...");
 			System.out.println("Existing ID: " + existing.getId());
 			existing.setDescription(description);
+			existing.setEstimatedHours(estimatedHours); // Always set estimated hours (required)
 			if (estimatedCost != null) {
 				existing.setEstimatedCost(estimatedCost);
-			}
-			if (estimatedHours != null) {
-				existing.setEstimatedHours(estimatedHours);
 			}
 			ModificationService updated = mongoTemplate.save(existing);
 			System.out.println("✓ Updated successfully in Time-slot database");
@@ -51,11 +54,9 @@ public class ModificationServiceService {
 		}
 		
 		ModificationService modificationService = new ModificationService(name, description);
+		modificationService.setEstimatedHours(estimatedHours); // Always set estimated hours (required)
 		if (estimatedCost != null) {
 			modificationService.setEstimatedCost(estimatedCost);
-		}
-		if (estimatedHours != null) {
-			modificationService.setEstimatedHours(estimatedHours);
 		}
 		ModificationService saved = mongoTemplate.save(modificationService);
 		System.out.println("✓ Saved successfully in Time-slot database");

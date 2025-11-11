@@ -19,7 +19,7 @@ import com.revamp.auth.auth.util.JwtUtil;
 @Service
 public class AuthService {
 
-    @Value("${google.client.id}")
+    @Value("${google.client.id:}")
     private String googleClientId;
 
     private final UserRepository userRepository;
@@ -48,6 +48,10 @@ public class AuthService {
 
     /** ✅ Verify Google OAuth Token */
     public GoogleIdToken.Payload verifyGoogleToken(String idTokenString) throws Exception {
+        if (googleClientId == null || googleClientId.isEmpty() || googleClientId.equals("YOUR_GOOGLE_CLIENT_ID_HERE")) {
+            throw new Exception("Google OAuth is not configured. Please set google.client.id in application.properties");
+        }
+        
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
                 new NetHttpTransport(),
                 new JacksonFactory()

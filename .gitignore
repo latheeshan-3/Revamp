@@ -11,6 +11,8 @@ node_modules/
 
 # Environment and configuration files (SENSITIVE - DO NOT COMMIT)
 **/application.properties
+**/application-dev.properties
+**/application-prod.properties
 !**/application.properties.example
 .env
 .env.local
@@ -34,6 +36,9 @@ yarn-debug.log*
 yarn-error.log*
 
 # Maven
+**/.mvn/
+**/mvnw
+**/mvnw.cmd
 **/.mvn/wrapper/maven-wrapper.jar
 
 # Documentation (removed per request)

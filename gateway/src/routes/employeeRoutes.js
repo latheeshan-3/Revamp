@@ -24,17 +24,55 @@ function buildHeaders(req) {
 // Add employee details
 router.post("/employee-details", async (req, res) => {
   try {
+    console.log(`[Gateway] POST /employee-details - Request body:`, JSON.stringify(req.body, null, 2));
+    console.log(`[Gateway] Calling employee service: ${EMPLOYEE_SERVICE}/api/employee/employee-details`);
+    
     const backendRes = await fetch(`${EMPLOYEE_SERVICE}/api/employee/employee-details`, {
       method: "POST",
       headers: buildHeaders(req),
       body: JSON.stringify(req.body),
     });
 
-    const data = await backendRes.json();
+    console.log(`[Gateway] Employee service response status: ${backendRes.status}`);
+    
+    // Get response text first to handle both success and error cases
+    const responseText = await backendRes.text();
+    console.log(`[Gateway] Employee service response body:`, responseText);
+    
+    let data;
+    try {
+      data = responseText ? JSON.parse(responseText) : {};
+    } catch (parseError) {
+      console.error(`[Gateway] Failed to parse response as JSON:`, parseError);
+      console.error(`[Gateway] Response text was:`, responseText);
+      // If response is not valid JSON, create a proper error response
+      return res.status(backendRes.status || 500).json({ 
+        message: "Invalid response from employee service",
+        error: responseText || "Empty response",
+        status: backendRes.status
+      });
+    }
+    
+    // If backend returned an error status, ensure we have a proper error message
+    if (!backendRes.ok) {
+      console.error(`[Gateway] Employee service returned error:`, data);
+      return res.status(backendRes.status).json({
+        message: data.message || "Error saving employee details",
+        error: data.error || data,
+        status: backendRes.status
+      });
+    }
+    
+    console.log(`[Gateway] Employee details saved successfully:`, data);
     res.status(backendRes.status).json(data);
   } catch (err) {
-    console.error("Add employee details error:", err);
-    res.status(500).json({ message: "Gateway error", error: err.message });
+    console.error("[Gateway] Add employee details error:", err);
+    console.error("[Gateway] Error stack:", err.stack);
+    res.status(500).json({ 
+      message: "Gateway error", 
+      error: err.message,
+      details: err.toString()
+    });
   }
 });
 

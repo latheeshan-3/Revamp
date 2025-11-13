@@ -1,8 +1,9 @@
 "use client";
 import SidebarLayout from "@/components/SidebarLayout";
 import ConfirmationPopup from "@/components/ConfirmationPopup";
-import { customerApi } from "@/lib/api";
 import { useEffect, useState } from "react";
+
+const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || "http://localhost:4000";
 
 type Booking = {
   id?: string;
@@ -30,7 +31,19 @@ export default function BookingsPage() {
   async function fetchBookings() {
     try {
       setLoading(true);
-      const list = await customerApi("/api/bookings");
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${GATEWAY_URL}/api/bookings`, {
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to load bookings: ${response.statusText}`);
+      }
+      
+      const list = await response.json();
       setBookings(list || []);
     } catch (err) {
       console.error("Failed to load bookings", err);
@@ -49,7 +62,19 @@ export default function BookingsPage() {
   async function confirmDelete() {
     if (!deleteBooking) return;
     try {
-      await customerApi(`/api/bookings/${deleteBooking}`, { method: "DELETE" });
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${GATEWAY_URL}/api/bookings/${deleteBooking}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to delete booking: ${response.statusText}`);
+      }
+      
       setMessage({ type: "success", text: "Booking deleted successfully!" });
       await fetchBookings();
     } catch (err) {

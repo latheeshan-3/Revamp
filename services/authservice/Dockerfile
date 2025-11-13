@@ -1,35 +1,31 @@
-# ===========================================
-# Stage 1: Build the Spring Boot application
-# ===========================================
-FROM maven:3.9.6-eclipse-temurin-21 AS build
-
+# ---------- Build Stage ----------
+FROM eclipse-temurin:21-jdk-jammy AS build
 WORKDIR /app
 
-# Copy only pom.xml first for dependency caching
+# Copy Maven wrapper and project files
+COPY mvnw mvnw.cmd ./
+COPY .mvn .mvn
 COPY pom.xml .
-RUN mvn dependency:go-offline -B
-
-# Copy source code
 COPY src ./src
 
-# Build the JAR (skip tests to speed up)
-RUN mvn clean package -DskipTests
+# Build the Spring Boot app (skip tests for faster builds)
+RUN ./mvnw clean package -DskipTests
 
-# ===========================================
-# Stage 2: Run the Spring Boot application
-# ===========================================
-FROM eclipse-temurin:21-jdk-alpine
+# Verify that the JAR was built correctly
+RUN ls -l /app/target
 
+# ---------- Runtime Stage ----------
+FROM eclipse-temurin:21-jre-jammy AS runner
 WORKDIR /app
 
-# Copy built JAR from the previous stage
-COPY --from=build /app/target/*.jar app.jar
+# Copy the built JAR from the build stage
+COPY --from=build /app/target/*.jar /app/app.jar
 
-# Expose the Spring Boot port
+# Expose the application port
 EXPOSE 8081
 
-# Default profile (can be overridden)
-ENV SPRING_PROFILES_ACTIVE=prod
+# JVM settings (you can override via environment)
+ENV JAVA_OPTS="-Xms256m -Xmx512m"
 
-# Start the application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Run the application (no shell wrapper — cleaner and safer)
+ENTRYPOINT ["java", "-Dserver.port=8081", "-Xms256m", "-Xmx512m", "-jar", "/app/app.jar"]

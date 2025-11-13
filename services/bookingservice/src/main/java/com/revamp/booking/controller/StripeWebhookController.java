@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 public class StripeWebhookController {
 
     private final BookingRepository bookingRepository;
-    @Value("${stripe.webhook.secret}")
+    @Value("${stripe.webhook.secret:}")
     private String webhookSecret;
 
     @PostMapping("/stripe")

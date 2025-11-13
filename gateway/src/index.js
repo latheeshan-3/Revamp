@@ -46,13 +46,12 @@ app.use(bodyParser.json());
 /* ===== Mount routes ===== */
 app.use("/api/auth", authRoutes);
 app.use("/api/customer", customerRoutes);
-app.use("/api/auth", employeeRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/time-tracking", timeTrackingRoutes);
 app.use("/api/notifications", notificationRoutes);
-app.use("/api", bookingRoutes);
-app.use("/api", adminRoutes);
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/", adminRoutes);
 
 /* ===== Start server ===== */
 const PORT = process.env.PORT || 4000;

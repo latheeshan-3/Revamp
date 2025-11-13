@@ -49,6 +49,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     if (roles instanceof List<?> list) {
       for (Object r : list) out.add(new SimpleGrantedAuthority("ROLE_" + String.valueOf(r)));
     }
+    // Check for "role" (singular) - used by authservice
+    Object role = claims.get("role");
+    if (role != null) {
+      out.add(new SimpleGrantedAuthority("ROLE_" + String.valueOf(role)));
+    }
     Object auths = claims.get("authorities");
     if (auths instanceof List<?> list) {
       for (Object a : list) out.add(new SimpleGrantedAuthority(String.valueOf(a)));
@@ -86,6 +91,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
       }
     } catch (Exception e) {
       // Invalid/expired token → continue without authentication
+      System.err.println("[JwtAuthFilter] Token validation failed: " + e.getMessage());
+      e.printStackTrace();
       SecurityContextHolder.clearContext();
     }
 

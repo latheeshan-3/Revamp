@@ -22,6 +22,8 @@ export default function Login() {
   const [loading, setLoading] = useState<boolean>(false);
 
   const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || "http://localhost:4000";
+  const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const isGoogleAuthEnabled = !!GOOGLE_CLIENT_ID;
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -182,24 +184,28 @@ export default function Login() {
             </div>
 
             {/* Google Sign In Button - Priority */}
-            <div className="mb-6">
-              <div className="flex justify-center p-1 bg-white border-2 border-gray-200 rounded-lg hover:border-yellow-400 hover:shadow-lg transition-all duration-300">
-                <GoogleLogin 
-                  onSuccess={handleGoogleSuccess} 
-                  onError={() => setError("Google login failed")}
-                  size="large"
-                  text="continue_with"
-                  width="100%"
-                />
-              </div>
-            </div>
+            {isGoogleAuthEnabled && (
+              <>
+                <div className="mb-6">
+                  <div className="flex justify-center p-1 bg-white border-2 border-gray-200 rounded-lg hover:border-yellow-400 hover:shadow-lg transition-all duration-300">
+                    <GoogleLogin 
+                      onSuccess={handleGoogleSuccess} 
+                      onError={() => setError("Google login failed")}
+                      size="large"
+                      text="continue_with"
+                      width="100%"
+                    />
+                  </div>
+                </div>
 
-            {/* Divider */}
-            <div className="relative flex items-center my-6">
-              <div className="flex-grow border-t border-gray-300"></div>
-              <span className="flex-shrink mx-4 text-gray-400 text-sm">OR</span>
-              <div className="flex-grow border-t border-gray-300"></div>
-            </div>
+                {/* Divider */}
+                <div className="relative flex items-center my-6">
+                  <div className="flex-grow border-t border-gray-300"></div>
+                  <span className="flex-shrink mx-4 text-gray-400 text-sm">OR</span>
+                  <div className="flex-grow border-t border-gray-300"></div>
+                </div>
+              </>
+            )}
 
            {/* Email/Password Form */}
 <form onSubmit={handleSubmit} noValidate>
